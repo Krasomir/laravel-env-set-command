@@ -2,9 +2,9 @@
 
 namespace Krasomir\LaravelEnvSetCommand;
 
+use Krasomir\LaravelEnvSetCommand\Commands\LaravelEnvSetCommandCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Krasomir\LaravelEnvSetCommand\Commands\LaravelEnvSetCommandCommand;
 
 class LaravelEnvSetCommandServiceProvider extends PackageServiceProvider
 {
