@@ -10,15 +10,18 @@ use InvalidArgumentException;
 class LaravelEnvSetCommandCommand extends Command
 {
     public const COMMAND_NAME = 'env:set';
+
     public const ARGUMENT_KEY = 'key';
+
     public const ARGUMENT_VALUE = 'value';
+
     public const ARGUMENT_ENV_FILE = 'env_file';
 
     protected $signature
         = self::COMMAND_NAME
-        . ' {' . self::ARGUMENT_KEY . ' : Key or "key=value" pair}'
-        . ' {' . self::ARGUMENT_VALUE . '? : Value}'
-        . ' {' . self::ARGUMENT_ENV_FILE . '? : Optional path to the .env file}';
+        .' {'.self::ARGUMENT_KEY.' : Key or "key=value" pair}'
+        .' {'.self::ARGUMENT_VALUE.'? : Value}'
+        .' {'.self::ARGUMENT_ENV_FILE.'? : Optional path to the .env file}';
 
     protected $description = 'Set and save an environment variable in the .env file';
 
@@ -34,9 +37,15 @@ class LaravelEnvSetCommandCommand extends Command
 
             // Use system env file path if the argument env file path is not provided.
             $envFilePath = $envFilePath ?? App::environmentFilePath();
-            $this->info("The following environment file is used: '" . $envFilePath . "'");
+            $this->info("The following environment file is used: '".$envFilePath."'");
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        if (! $envFilePath) {
+            $this->error('The environment file path ('.$this->argument(self::ARGUMENT_ENV_FILE).') is not valid.');
 
             return self::FAILURE;
         }
@@ -54,13 +63,12 @@ class LaravelEnvSetCommandCommand extends Command
         $this->writeFile($envFilePath, $newEnvFileContent);
 
         $this->comment('All done');
+
         return self::SUCCESS;
     }
 
     private function parseCommandArguments(string $_key, ?string $_value, ?string $_envFilePath): array
     {
-        $key = null;
-        $value = null;
         $envFilePath = null;
 
         // Parse "key=value" key argument.
@@ -85,26 +93,26 @@ class LaravelEnvSetCommandCommand extends Command
 
         // If the value contains spaces but not is not enclosed in quotes.
         if (preg_match('#^[^\'"].*\s+.*[^\'"]$#umU', $value)) {
-            $value = '"' . $value . '"';
+            $value = '"'.$value.'"';
         }
 
         return [
             strtoupper($key),
             $value,
-            ($envFilePath === null ? null : realpath($envFilePath))
+            ($envFilePath === null ? null : realpath($envFilePath)),
         ];
     }
 
     private function assertKeyIsValid(string $key): void
     {
         if (Str::contains($key, '=')) {
-            throw new InvalidArgumentException('Invalid environment key ' . $key
-                . "! Environment key should not contain '='");
+            throw new InvalidArgumentException('Invalid environment key '.$key
+                ."! Environment key should not contain '='");
         }
 
-        if (!preg_match('/^[a-zA-Z_]+$/', $key)) {
-            throw new InvalidArgumentException('Invalid environment key ' . $key
-                . '! Only use letters and underscores');
+        if (! preg_match('/^[a-zA-Z_]+$/', $key)) {
+            throw new InvalidArgumentException('Invalid environment key '.$key
+                .'! Only use letters and underscores');
         }
     }
 
@@ -113,16 +121,16 @@ class LaravelEnvSetCommandCommand extends Command
         $oldPair = $this->readKeyValuePair($envFileContent, $key);
 
         // Wrap values that have a space or equals in quotes to escape them
-        if (preg_match('/\s/',$value) || str_contains($value, '=')) {
-            $value = '"' . $value . '"';
+        if ((preg_match('/\\s/', $value) || str_contains($value, '=')) && ! (preg_match('#^(["\']).*\1$#', $value))) {
+            $value = '\"'.$value.'\"';
         }
 
-        $newPair = $key . '=' . $value;
+        $newPair = $key.'='.$value;
 
         // For existed key.
         if ($oldPair !== null) {
             $replaced = preg_replace(
-                '/^' . preg_quote($oldPair, '/') . '$/uimU',
+                '/^'.preg_quote($oldPair, '/').'$/uimU',
                 $newPair,
                 $envFileContent
             );
@@ -131,7 +139,7 @@ class LaravelEnvSetCommandCommand extends Command
         }
 
         // For a new key.
-        return [$envFileContent . "\n" . $newPair . "\n", true];
+        return [$envFileContent."\n".$newPair."\n", true];
     }
 
     private function readKeyValuePair(string $envFileContent, string $key): ?string
