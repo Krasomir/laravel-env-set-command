@@ -41,6 +41,11 @@ class LaravelEnvSetCommandCommand extends Command
             return self::FAILURE;
         }
 
+        if (!$envFilePath) {
+            $this->error("The environment file path (". $this->argument(self::ARGUMENT_ENV_FILE) .") is not valid.");
+            return self::FAILURE;
+        }
+
         $content = file_get_contents($envFilePath);
         [$newEnvFileContent, $isNewVariableSet] = $this->setEnvVariable($content, $key, $value);
 
@@ -59,8 +64,6 @@ class LaravelEnvSetCommandCommand extends Command
 
     private function parseCommandArguments(string $_key, ?string $_value, ?string $_envFilePath): array
     {
-        $key = null;
-        $value = null;
         $envFilePath = null;
 
         // Parse "key=value" key argument.
@@ -113,8 +116,8 @@ class LaravelEnvSetCommandCommand extends Command
         $oldPair = $this->readKeyValuePair($envFileContent, $key);
 
         // Wrap values that have a space or equals in quotes to escape them
-        if (preg_match('/\s/',$value) || str_contains($value, '=')) {
-            $value = '"' . $value . '"';
+        if ((preg_match('/\\s/',$value) || str_contains($value, '=')) && !(preg_match('#^(["\']).*\1$#', $value))) {
+            $value = '\"' . $value . '\"';
         }
 
         $newPair = $key . '=' . $value;
