@@ -37,7 +37,7 @@ class LaravelEnvSetCommandCommand extends Command
 
             // Use system env file path if the argument env file path is not provided.
             $envFilePath = $envFilePath ?? App::environmentFilePath();
-            $this->info("The following environment file is used: '".$envFilePath."'");
+            $this->info("The following environment file is used: '{$envFilePath}'");
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
@@ -45,7 +45,7 @@ class LaravelEnvSetCommandCommand extends Command
         }
 
         if (! $envFilePath) {
-            $this->error('The environment file path ('.$this->argument(self::ARGUMENT_ENV_FILE).') is not valid.');
+            $this->error('The environment file path provided is not valid.');
 
             return self::FAILURE;
         }
@@ -56,7 +56,7 @@ class LaravelEnvSetCommandCommand extends Command
         if ($isNewVariableSet) {
             $this->info("A new environment variable with key '$key' has been set to '$value'");
         } else {
-            [$_, $oldValue] = explode('=', $this->readKeyValuePair($content, $key), 2);
+            $oldValue = Str::after($this->readKeyValuePair($content, $key) ?? '', '=');
             $this->info("Environment variable with key '$key' has been changed from '$oldValue' to '$value'");
         }
 
@@ -67,26 +67,26 @@ class LaravelEnvSetCommandCommand extends Command
         return self::SUCCESS;
     }
 
-    private function parseCommandArguments(string $_key, ?string $_value, ?string $_envFilePath): array
+    private function parseCommandArguments(string $rawKey, ?string $rawValue, ?string $rawEnvFilePath): array
     {
         $envFilePath = null;
 
         // Parse "key=value" key argument.
-        if (preg_match('#^([^=]+)=(.*)$#umU', $_key, $matches)) {
+        if (preg_match('#^([^=]+)=(.*)$#umU', $rawKey, $matches)) {
             [1 => $key, 2 => $value] = $matches;
 
             // Use second argument as path to env file:
-            if ($_value !== null) {
-                $envFilePath = $_value;
+            if ($rawValue !== null) {
+                $envFilePath = $rawValue;
             }
         } else {
-            $key = $_key;
-            $value = $_value;
+            $key = $rawKey;
+            $value = $rawValue;
         }
 
         // If the path to env file is not set, use third argument or return null (default system path).
         if ($envFilePath === null) {
-            $envFilePath = $_envFilePath;
+            $envFilePath = $rawEnvFilePath;
         }
 
         $this->assertKeyIsValid($key);
@@ -122,7 +122,7 @@ class LaravelEnvSetCommandCommand extends Command
 
         // Wrap values that have a space or equals in quotes to escape them
         if ((preg_match('/\\s/', $value) || str_contains($value, '=')) && ! (preg_match('#^(["\']).*\1$#', $value))) {
-            $value = '\"'.$value.'\"';
+            $value = '"'.$value.'"';
         }
 
         $newPair = $key.'='.$value;
@@ -145,7 +145,7 @@ class LaravelEnvSetCommandCommand extends Command
     private function readKeyValuePair(string $envFileContent, string $key): ?string
     {
         // Match the given key at the beginning of a line
-        if (preg_match("#^ *{$key} *= *[^\r\n]*$#uimU", $envFileContent, $matches)) {
+        if (preg_match('#^ *'.preg_quote($key, '#').' *= *[^\r\n]*$#uimU', $envFileContent, $matches)) {
             return $matches[0];
         }
 

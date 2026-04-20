@@ -116,3 +116,47 @@ it('uses the default env file path when none is provided', function () {
 
     file_put_contents($defaultEnvPath, $originalContent);
 });
+
+it('wraps values containing equals sign in quotes', function () {
+    $this->artisan('env:set', [
+        'key' => 'SOME_TOKEN',
+        'value' => 'abc=def',
+        'env_file' => $this->envFile,
+    ])->assertSuccessful();
+
+    expect(file_get_contents($this->envFile))->toContain('SOME_TOKEN="abc=def"');
+});
+
+it('sets a variable in an empty env file', function () {
+    file_put_contents($this->envFile, '');
+
+    $this->artisan('env:set', [
+        'key' => 'APP_NAME',
+        'value' => 'Laravel',
+        'env_file' => $this->envFile,
+    ])->assertSuccessful();
+
+    expect(file_get_contents($this->envFile))->toContain('APP_NAME=Laravel');
+});
+
+it('does not double-quote an already quoted value', function () {
+    file_put_contents($this->envFile, "APP_NAME=\"My App\"\n");
+
+    $this->artisan('env:set', [
+        'key' => 'APP_NAME',
+        'value' => '"My App"',
+        'env_file' => $this->envFile,
+    ])->assertSuccessful();
+
+    expect(file_get_contents($this->envFile))
+        ->toContain('APP_NAME="My App"')
+        ->not->toContain('APP_NAME=""My App""');
+});
+
+it('fails when the env file path does not exist', function () {
+    $this->artisan('env:set', [
+        'key' => 'APP_NAME',
+        'value' => 'Laravel',
+        'env_file' => '/nonexistent/path/.env',
+    ])->assertFailed();
+});
