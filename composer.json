@@ -21,6 +21,7 @@
         "laravel/framework": "^10.0|^11.0|^12.0|^13.0"
     },
     "require-dev": {
+        "larastan/larastan": "^2.9|^3.0",
         "laravel/pint": "^1.0",
         "nunomaduro/collision": "^7.10|^8.0",
         "orchestra/testbench": "^8.22|^9.0|^10.0|^11.0",
@@ -52,10 +53,11 @@
             "@composer run build",
             "@php vendor/bin/testbench serve"
         ],
-        "analyse": "vendor/bin/phpstan analyse",
+        "analyse": "vendor/bin/phpstan analyse -c phpstan.neon.dist",
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
-        "format": "vendor/bin/pint"
+        "format": "vendor/bin/pint",
+        "check": "composer run analyse && composer run test && composer run format"
     },
     "config": {
         "sort-packages": true,
